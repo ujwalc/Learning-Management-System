@@ -18,6 +18,11 @@
             <section class="col-12 col-sm-6 col-md-3">
                 <h5>{{message}}</h5>
                 <form class="form-container" action="{{url_for('ques_signup')}}" method="post">
+                    <input type="hidden" class="form-control" name="email" value={{username}}>
+                    <input type="hidden" class="form-control" name="password" value={{password}}>
+                    <input type="hidden" class="form-control" name="name" value={{name}}>
+                    <input type="hidden" class="form-control" name="university" value={{university}}>
+                    <input type="hidden" class="form-control" name="role" value={{role}}>
                     <h4> Signup </h4>
                     <br>
                     <div class="form-group">

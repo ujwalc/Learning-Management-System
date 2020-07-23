@@ -43,10 +43,21 @@ def user_login():
     email = request.form['email']
     password = request.form['password']
     data = {'username':email,'password':password}
+    ques_data = {'email':email}
     response = requests.post("https://t30lqnf2cb.execute-api.us-east-1.amazonaws.com/prod/login", json=data)
-    print(response.json()['status'])
     if(response.json()['status'] == 'success'):
-        return render_template("home.html",email=email)
+        ques_response = requests.post("https://us-central1-serverless-2-279802.cloudfunctions.net/getQuestions", json=ques_data)
+        if 'success' in ques_response.json().keys():
+            message="Issue with 2nd factor authentication"
+            return render_template("login.html", message = message)
+        else:
+            questions=[]
+            for key in ques_response.json().keys():
+                questions.append(key)
+            print(questions[1])
+            print(ques_response.json()[questions[1]])
+            return render_template("login_question.html",email=email,question=questions[1],answer=ques_response.json()[questions[1]])
+            #return render_template("home.html", email = email)
     else:
         message="Incorrect password or username"
         return render_template("login.html", message = message)
@@ -65,7 +76,7 @@ def user_signup():
         data = {'email':email,'password':password,'name':name,'university':university,'username':email,'role':role}
         response = requests.post("https://t30lqnf2cb.execute-api.us-east-1.amazonaws.com/prod/signup", json=data)     
         if response.json()['message']=="Success, Enter OTP":
-            return render_template('confirmSignUp.html', username = email, password = password, name = name, university = university,role = role)
+            return render_template('signup_question.html', username = email, password = password, name = name, university = university,role = role)
         else:
             message=response.json()['message']
             return render_template("signup.html", message = message) 
@@ -117,22 +128,36 @@ def password_validate():
 
 @app.route("/signupQues",methods=['POST','GET'])
 def ques_signup():
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
+    university=request.form['university']
+    role=request.form['role']
     ques1 = request.form['ques1']
     ans1 = request.form['ans1']
     ques2 = request.form['ques2']
     ans2 = request.form['ans2']
     ques3 = request.form['ques3']
     ans3 = request.form['ans3']
-    data = {ques1:ans1,ques2:ans2,ques3:ans3}
-    print(data)
-    message="Signed Up"
-    return render_template('login.html', message = message)
+    data = {'email':email,'ques1':ques1,'ans1':ans1,'ques2':ques2,'ans2':ans2,'ques3':ques3,'ans3':ans3}
+    response = requests.post("https://us-central1-serverless-2-279802.cloudfunctions.net/createQuestions", json=data) 
+    if response.json()['success']=="True":
+        return render_template('confirmSignup.html', username = email, password = password, name = name, university = university,role = role)
+    else:
+        message="Please Submit Again with all answers filled" 
+        return render_template('signup_question.html',message=message, username = email, password = password, name = name, university = university,role = role)
+    
 
 @app.route("/loginQues",methods=['POST','GET'])
 def ques_login():
+    email = request.form['email']
     answer = request.form['answer']
-    print(answer)
-    return "Logged In"
+    givenAnswer = request.form['givenAnswer']
+    if answer == givenAnswer:
+        return render_template('home.html', email = email)
+    else:
+        message="Answer is not valid. Please Try Again"
+        return render_template('login.html',message=message)
 
 @app.route("/logout",methods=['POST','GET'])
 def user_logout():
