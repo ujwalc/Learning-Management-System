@@ -12,7 +12,7 @@ def login():
 
 @app.route('/home')
 def user_home():
-    return render_template('home.html')
+    return render_template('home.htm')
 
 @app.route('/signup')
 def signup():
@@ -154,7 +154,7 @@ def ques_login():
     answer = request.form['answer']
     givenAnswer = request.form['givenAnswer']
     if answer == givenAnswer:
-        return render_template('home.html', email = email)
+        return render_template('home.htm', email = email)
     else:
         message="Answer is not valid. Please Try Again"
         return render_template('login.html',message=message)
