@@ -1,8 +1,14 @@
-from flask import Flask, request, session
+import requests, json, os, nltk, re, math
+from flask import Flask, request, send_file
 from flask.templating import render_template
-import requests, json
+from bs4 import BeautifulSoup
+import pandas as pd
+from nltk.stem.snowball import SnowballStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
 
 app = Flask(__name__)
+key_path = "credentials/sdpmodule-a63374297120.json"
 
 
 @app.route('/')
@@ -17,7 +23,7 @@ def chat():
 
 @app.route('/home')
 def user_home():
-    return render_template('home.htm')
+    return render_template('home.html')
 
 
 @app.route('/signup')
@@ -173,7 +179,7 @@ def ques_login():
     answer = request.form['answer']
     givenAnswer = request.form['givenAnswer']
     if answer == givenAnswer:
-        return render_template('home.htm', email=email)
+        return render_template('home.html', email=email)
     else:
         message = "Answer is not valid. Please Try Again"
         return render_template('login.html', message=message)
@@ -203,6 +209,91 @@ def resend_otp_code():
     else:
         message = "Error Sending Code, Please Try Again"
         return render_template('confirmSignUp.html', username=email, password=password, message=message)
+
+
+@app.route("/uploadfiles", methods=['POST'])
+def upload_files():
+    uploaded_files = request.files.getlist("files")
+    non_stopped_words = []
+    for file in uploaded_files:
+        print("uploading file: ", file)
+        for line in file:
+            line = line.decode("utf-8").strip()
+            words = line.split(" ")
+            non_stopped_words.extend(words)
+    non_stopped_words = ' '.join(non_stopped_words)
+    response = requests.post('https://dataprocessing-hd4jbagnda-uc.a.run.app/',
+                             data=json.dumps({'words': non_stopped_words}))
+    with open('static/wordcloud.png', 'wb') as wordcloud:
+        wordcloud.write(response.content)
+    return send_file('static/wordcloud.png')
+
+
+def tokenize_and_stem(text, do_stem=True):
+    # first tokenize by sentence, then by word to ensure that punctuation is caught as it's own token
+    tokens = [word.lower() for sent in nltk.sent_tokenize(text) for word in nltk.word_tokenize(sent)]
+
+    # filter out any tokens not containing letters (e.g., numeric tokens, raw punctuation)
+    filtered_tokens = []
+    for token in tokens:
+        if re.search('[a-zA-Z]', token):
+            filtered_tokens.append(token)
+
+    # stem filtered tokens
+    stemmer = SnowballStemmer("english")
+    stems = [stemmer.stem(t) for t in filtered_tokens]
+
+    if do_stem:
+        return stems
+    else:
+        return filtered_tokens
+
+
+def form_cluster(dataframe):
+    totalvocab_stemmed = []
+    totalvocab_tokenized = []
+    for i in dataframe['title']:
+        allwords_stemmed = tokenize_and_stem(i)
+        totalvocab_stemmed.extend(allwords_stemmed)
+
+        allwords_tokenized = tokenize_and_stem(i, do_stem=False)
+        totalvocab_tokenized.extend(allwords_tokenized)
+
+    tfidf_vectorizer = TfidfVectorizer(max_df=1, max_features=200000, min_df=0, use_idf=True,
+                                       tokenizer=tokenize_and_stem, ngram_range=(1, 3))
+    tfidf_matrix = tfidf_vectorizer.fit_transform(dataframe['title'])
+
+    num_clusters = int(math.sqrt(dataframe.shape[0] / 2) * 1.5)
+    km = KMeans(n_clusters=num_clusters)
+    km.fit(tfidf_matrix)
+    KMeans(algorithm='auto', copy_x=True, init='k-means++', max_iter=300,
+           n_clusters=9, n_init=10, n_jobs=1, precompute_distances='auto', random_state=None, tol=0.0001, verbose=0)
+
+    dataframe['cluster'] = km.labels_.tolist()
+    dataframe = dataframe.sort_values(by='cluster')
+    print(dataframe)
+    return dataframe
+
+
+@app.route('/cluster', methods=['POST'])
+def cluster():
+    nltk.download('punkt')
+    article_titles = []
+
+    uploaded_files = request.files.getlist("files_cluster")
+    for file in uploaded_files:
+        print("uploading file: ", file)
+        file.save(os.path.join('static', 'test.sgm'))
+        with open('static/test.sgm') as file:
+            soup = BeautifulSoup(file.read())
+            titles = soup.find_all('title')
+            for title in titles:
+                title = ''.join(char for char in title.text.strip() if char.isalnum() or char == ' ')
+                article_titles.append(title)
+    dataframe = pd.DataFrame({'title': article_titles})
+    dataframe = form_cluster(dataframe)
+    dataframe.to_html('templates/clustering.html')
+    return render_template('clustering.html')
 
 
 if __name__ == '__main__':
