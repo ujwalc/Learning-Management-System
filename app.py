@@ -10,6 +10,10 @@ def login():
     message = ""
     return render_template('login.html', message=message)
 
+@app.route("/chat", methods=['POST', 'GET'])
+def chat():
+    email = request.form['email']
+    return render_template('chat.htm', email = email)
 
 @app.route('/home')
 def user_home():
