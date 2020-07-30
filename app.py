@@ -1,11 +1,8 @@
-import requests, json, os, nltk, re, math
+import requests, json, os
 from flask import Flask, request, send_file
 from flask.templating import render_template
-from bs4 import BeautifulSoup
-import pandas as pd
-from nltk.stem.snowball import SnowballStemmer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
+from werkzeug.utils import secure_filename
+import boto3 as b3
 
 app = Flask(__name__)
 key_path = "credentials/sdpmodule-a63374297120.json"
@@ -214,16 +211,22 @@ def resend_otp_code():
 @app.route("/uploadfiles", methods=['POST'])
 def upload_files():
     uploaded_files = request.files.getlist("files")
-    non_stopped_words = []
+    non_stopped_words = ''
     for file in uploaded_files:
-        print("uploading file: ", file)
         for line in file:
-            line = line.decode("utf-8").strip()
-            words = line.split(" ")
-            non_stopped_words.extend(words)
-    non_stopped_words = ' '.join(non_stopped_words)
-    response = requests.post('https://dataprocessing-hd4jbagnda-uc.a.run.app/',
-                             data=json.dumps({'words': non_stopped_words}))
+            non_stopped_words += line.decode('utf-8').strip()
+
+        print("uploading file: ", file)
+        file.save(os.path.join('static', secure_filename(file.filename)))
+        with open(os.path.join('static', file.filename), 'rb') as tech_file:
+            s3_buckets = b3.resource('s3')
+            source_bucket = s3_buckets.Bucket('sdparticles')
+            print(source_bucket)
+            response = source_bucket.put_object(Key=file.filename, Body=tech_file)
+            print("File Uploaded Successfully...")
+            print(response)
+
+    response = requests.post('https://dataprocessing-hd4jbagnda-uc.a.run.app/', data={'data': non_stopped_words})
     with open('static/wordcloud.png', 'wb') as wordcloud:
         wordcloud.write(response.content)
     return send_file('static/wordcloud.png')
