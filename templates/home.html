@@ -1,3 +1,5 @@
+<!-- Code adopted from https://aws.amazon.com/blogs/machine-learning/greetings-visitor-engage-your-web-users-with-amazon-lex/-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,7 +55,7 @@
             }
         }
 
-        input#wisdom {
+        input#lexinput {
             padding: 4px;
             font-size: 1em;
             width: 400px;
@@ -129,9 +131,7 @@
                             name="email"
                             value="{{ email }}"
                     />
-                    <!-- <button type="submit" class="btn btn-primary btn-block">
-                      Chat
-                    </button> -->
+                  
                     <button type="submit" class="btn btn-warning">Chat</button>
                 </form>
             </ul>
@@ -190,7 +190,7 @@
         <div class="col-sm-4 sidenav" style="top: 200px; left: 230px;">
             <h2>Online Support Module</h2>
             <div
-                    id="conversation"
+                    id="conversation-lex"
                     style="
               width: 400px;
               height: 400px;
@@ -207,7 +207,7 @@
             >
                 <input
                         type="text"
-                        id="wisdom"
+                        id="lexinput"
                         size="80"
                         value=""
                         placeholder="LMS Online Support "
@@ -218,13 +218,13 @@
 </div>
 
 <script type="text/javascript">
-    // set the focus to the input box
-    document.getElementById("wisdom").focus();
+   
+    document.getElementById("lexinput").focus();
 
-    // Initialize the Amazon Cognito credentials provider
-    AWS.config.region = "us-east-1"; // Region
+
+    AWS.config.region = "us-east-1"; 
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-        // Provide your Pool Id here
+        
         IdentityPoolId: "us-east-1:ad8644d6-3ec2-4a9f-877b-4304835c131d",
     });
 
@@ -232,28 +232,27 @@
     var lexUserId = "chatbot-demo" + Date.now();
     var sessionAttributes = {};
 
-    function pushChat() {
-        // if there is text to be sent...
-        var wisdomText = document.getElementById("wisdom");
+    function pushChat() {  
+        var lexinputText = document.getElementById("lexinput");
         if (
-            wisdomText &&
-            wisdomText.value &&
-            wisdomText.value.trim().length > 0
+            lexinputText &&
+            lexinputText.value &&
+            lexinputText.value.trim().length > 0
         ) {
-            // disable input to show we're sending it
-            var wisdom = wisdomText.value.trim();
-            wisdomText.value = "...";
-            wisdomText.locked = true;
+            
+            var lexinput = lexinputText.value.trim();
+            lexinputText.value = "...";
+            lexinputText.locked = true;
 
-            // send it to the Lex runtime
+            
             var params = {
                 botAlias: "$LATEST",
                 botName: "LearnungManagementsystem",
-                inputText: wisdom,
+                inputText: lexinput,
                 userId: lexUserId,
                 sessionAttributes: sessionAttributes,
             };
-            showRequest(wisdom);
+            showRequest(lexinput);
             lexruntime.postText(params, function (err, data) {
                 if (err) {
                     console.log(err, err.stack);
@@ -262,58 +261,55 @@
                     );
                 }
                 if (data) {
-                    // capture the sessionAttributes for the next cycle
+                    
                     sessionAttributes = data.sessionAttributes;
-                    // show response and/or error/dialog status
+                    
                     showResponse(data);
                 }
-                // re-enable input
-                wisdomText.value = "";
-                wisdomText.locked = false;
+                
+                lexinputText.value = "";
+                lexinputText.locked = false;
             });
         }
-        // we always cancel form submission
+      
         return false;
     }
 
-    function showRequest(daText) {
-        var conversationDiv = document.getElementById("conversation");
-        var requestPara = document.createElement("P");
-        requestPara.className = "userRequest";
-        requestPara.appendChild(document.createTextNode(daText));
-        conversationDiv.appendChild(requestPara);
+    function showRequest(lextxt) {
+        var conversationDiv = document.getElementById("conversation-lex");
+        var req = document.createElement("P");
+        req.className = "userRequest";
+        requesreqtPara.appendChild(document.createTextNode(lextxt));
+        conversationDiv.appendChild(req);
         conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
-    function showError(daText) {
-        var conversationDiv = document.getElementById("conversation");
-        var errorPara = document.createElement("P");
-        errorPara.className = "lexError";
-        errorPara.appendChild(document.createTextNode(daText));
-        conversationDiv.appendChild(errorPara);
+    function showError(lextxt) {
+        var conversationDiv = document.getElementById("conversation-lex");
+        var err = document.createElement("P");
+        err.className = "lexError";
+        err.appendChild(document.createTextNode(lextxt));
+        conversationDiv.appendChild(err);
         conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
     function showResponse(lexResponse) {
-        var conversationDiv = document.getElementById("conversation");
-        var responsePara = document.createElement("P");
-        responsePara.className = "lexResponse";
+        var conversationDiv = document.getElementById("conversation-lex");
+        var res = document.createElement("P");
+        res.className = "lexResponse";
         if (lexResponse.message) {
-            responsePara.appendChild(
+            res.appendChild(
                 document.createTextNode(lexResponse.message)
             );
-            responsePara.appendChild(document.createElement("br"));
+            res.appendChild(document.createElement("br"));
         }
         if (lexResponse.dialogState === "ReadyForFulfillment") {
-            responsePara.appendChild(
+            res.appendChild(
                 document.createTextNode("Ready for fulfillment")
             );
-            // TODO:  show slot values
-        } else {
-            //responsePara.appendChild(document.createTextNode(
-            //  '(' + lexResponse.dialogState + ')'));
-        }
-        conversationDiv.appendChild(responsePara);
+            
+        } 
+        conversationDiv.appendChild(res);
         conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 </script>
