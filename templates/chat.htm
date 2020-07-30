@@ -96,28 +96,15 @@
             }
           }); //output to web browser console
       }
-
-      function formatAMPM(date) {
-        var hours = date.getHours();
-        var minutes = date.getMinutes();
-        var ampm = hours >= 12 ? "PM" : "AM";
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        var strTime = hours + ":" + minutes + " " + ampm;
-        return strTime;
-      }
-
       //-- No use time. It is a javaScript effect.
       function insertChat(who, text, time, name) {
         if (time === undefined) {
           time = 0;
         }
-        var control = "";
-        var date = formatAMPM(new Date());
+        var c = "";
 
-        if (who == "me") {
-          control =
+        if (who === "0") {
+          c =
             '<li style="width:100%">' +
             '<div class="msj macro">' +
             '<div class="text text-l">' +
@@ -134,7 +121,7 @@
             "</div>" +
             "</li>";
         } else {
-          control =
+          c =
             '<li style="width:100%;">' +
             '<div class="msj-rta macro">' +
             '<div class="text text-r">' +
@@ -151,19 +138,15 @@
             "</li>";
         }
         setTimeout(function () {
-          $("ul").append(control).scrollTop($("ul").prop("scrollHeight"));
+          $("ul").append(c).scrollTop($("ul").prop("scrollHeight"));
         }, time);
-      }
-
-      function resetChat() {
-        $("ul").empty();
       }
 
       $(".mytext").on("keydown", function (e) {
         if (e.which == 13) {
           var text = $(this).val();
           if (text !== "") {
-            insertChat("me", text);
+            insertChat("0", text);
             $(this).val("");
           }
         }
@@ -173,24 +156,11 @@
         $(".mytext").trigger({ type: "keydown", which: 13, keyCode: 13 });
       });
 
-      //-- Clear Chat
-      resetChat();
-
-      //-- Print Messages
-
-      // insertChat("me", "What would you like to talk about today?", 3500);
-      // insertChat("you", "Tell me a joke",7000);
-      // insertChat("me", "Spaceman: Computer! Computer! Do we bring battery?!", 9500);
-      // insertChat("you", "LOL", 12000);
-
-      //-- NOTE: No use time on insertChat.
-
       $(document).ready(function () {
         $("#enter_chat").click(function () {
           var chat_term = $("#chat").val();
           var email = $("#email").text();
-          insertChat("me", chat_term, 0, email);
-          // insertChat("you", "Hi, Pablo", 1500);
+          insertChat("0", chat_term, 0, email);
         });
       });
     </script>
@@ -362,7 +332,6 @@
           </div>
 
           <div style="padding: 10px;">
-            <!-- <span class="glyphicon glyphicon-share-alt"></span> -->
             <button id="enter_chat" onclick="sendData()">Enter Chat</button>
           </div>
         </div>
