@@ -229,6 +229,9 @@ def upload_files():
     return send_file('static/wordcloud.png')
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 48c08e8d47dcdd9290a84e5798204c18157de230
 if __name__ == '__main__':
     app.run()
